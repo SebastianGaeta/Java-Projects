@@ -1,0 +1,358 @@
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Random;
+import java.io.FileWriter;
+
+//"Using the color codes isn’t required, if you have another way you’d like to format the words; just make
+//sure to describe your formatting in your README"
+
+/*"Hahaha, I wish I had read this. The pain of getting the colors to work was immeasurable. 
+Originally, I used a single string, but that caused issues in parsing when a color was present because these 'Colors' add string 
+spaghetti to the string itself, which makes it difficult to read if a string or substring is present. Check the 'format letters'
+function—I literally had to change to a string array and use a clean, unformatted string array to deal with this issue."*/
+
+public class Wordle{
+
+    // field variables
+    public static String filename = "sgb-words.txt"; // change file to write to and read from
+    public static String GREEN = "\033[0;32m";
+    public static String RED = "\033[0;31m";
+    public static String YELLOW = "\033[0;33m";
+    public static String RESET = "\033[0m";
+
+    // WAI
+    public static void writeToFile(ArrayList<String> words, int randomNumberIndex){
+        words.remove(randomNumberIndex);
+        try {
+            FileWriter fileHandle = new FileWriter(Wordle.filename);
+            for (String word : words){
+                fileHandle.write(word + "\n");
+            }
+            fileHandle.close();
+        } catch (IOException e) {
+            System.out.println("Error: Failed to write any/all words back to: " + Wordle.filename);
+            e.printStackTrace();
+        }
+    }
+    
+    // WAI
+    public static ArrayList<String> readFile(){ // reads in file with option to either read in duplicate letter words or not
+        ArrayList<String> words = new ArrayList<String>();
+        Boolean useDuplicateLetterWords = true; // read duplicate letter words (true) or remove duplicate letter words (false)
+
+        try {
+            File file = new File(Wordle.filename); 
+            Scanner fileHandle = new Scanner(file);
+            
+            while (fileHandle.hasNextLine()){ // check if text is still available to scan    
+                
+                String[] tempWords = fileHandle.nextLine().replaceAll("\\p{Punct}"," ").trim().split("\\s+");
+        
+                if (useDuplicateLetterWords){
+                    for (String word : tempWords){ 
+                    words.add(word);
+                    } 
+                } else {
+                    tempWords = removeDuplicateLetterWords(tempWords); // remove words that contain duplicate letters // B: works
+                    for (String word : tempWords){
+                        if (word != null){ // add words so long as they arent null
+                            words.add(word);
+                        }
+                    } 
+                }
+            }
+
+            words = removeDuplicateWords(words); // remove duplicate words in ArrayList
+
+        } catch (FileNotFoundException e) { // file fails to open
+            System.out.println("Error: File failed to open");
+            e.printStackTrace();
+        }
+        return words;
+    }
+
+    // WAI
+    public static ArrayList<String> removeDuplicateWords(ArrayList<String> words){ // remove duplicate words
+        ArrayList<String> newWords = new ArrayList<String>();
+        
+        for (int i = 0; i < words.size(); i++){ // get ith word to compare
+            Boolean validWord = true;
+            int occurrences = 0;
+            for (int j = 0; j < words.size(); j++){ // compare ith word to jth word
+                if (words.get(j).equals(words.get(i))){
+                    occurrences += 1;
+                    if (occurrences > 1){ // in the case we find a duplicate word
+                        for (int k = 0; k < newWords.size(); k++){ // check if the duplicate word is already in new words
+                            if (newWords.get(k).equals(words.get(j))){ 
+                                validWord = false; // we found a duplicate so dont add
+                                break;
+                            }
+                        }
+                    }
+                }  
+            }
+            if (validWord != false){
+                newWords.add(words.get(i)); // add word
+            } 
+        }
+        
+        return newWords;
+    }
+    
+    // WAI
+    public static String[] formatLetters(ArrayList<String> colorToChange, String guess, String[] formattedLetters){
+        String[] letters = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}; // need this because the color strings are making the formatted strings unwritable
+        
+        for (int i = 0; i < colorToChange.size(); i++){
+            
+            for (int j = 0; j < letters.length; j++){
+                if (letters[j].equals(String.valueOf(guess.charAt(i)))){ //find the color
+                    switch (colorToChange.get(i)) {
+                        case "Green":                 
+                            formattedLetters[j]= Wordle.GREEN + letters[j] + Wordle.RESET;      
+                            break;
+                        case "Yellow":
+                            if (formattedLetters[j].contains(Wordle.GREEN) == false){ // maybe .indexOf(Wordle.GREEN) == -1
+                                formattedLetters[j]= Wordle.YELLOW + letters[j] + Wordle.RESET;
+                            }                 
+                            break;
+                        case "Red":
+                            if (formattedLetters[j].contains(Wordle.GREEN) == false){ // maybe .indexOf(Wordle.GREEN) == -1
+                                formattedLetters[j]= Wordle.RED + letters[j] + Wordle.RESET;
+                            }                 
+                            break;
+                        default:
+                            System.out.println("Error");       
+                    }
+                }
+            }
+        }
+        return formattedLetters;
+    }
+    
+    // WAI
+    public static String[] removeDuplicateLetterWords(String[] wordsToCheck){ // check if a given word has duplicate letters
+        String[] newWords = new String[wordsToCheck.length]; 
+        
+
+        for (int i = 0; i < wordsToCheck.length; i++){ // outer loop to check word
+            Boolean validWord = true;
+            char[] tempCharacters = new char[wordsToCheck[i].length()];
+            for (int j = 0; j < wordsToCheck[i].length() && validWord == true; j++){ // add jth character to array
+                tempCharacters[j] = wordsToCheck[i].charAt(j);
+                int count = 0;
+                for (int k = 0; k < tempCharacters.length; k++){ // check if jth character exist already
+                    if (tempCharacters[k] == tempCharacters[j]){
+                        count += 1;
+                    }
+                    if (count > 1){
+                        validWord = false;
+                    }
+                }
+
+            }
+
+            if (validWord != false){ // add word if no duplicate letters
+                newWords[i] = wordsToCheck[i];
+            }
+
+        }
+        return newWords;
+    }
+
+    // WAI
+    public static int getWord(ArrayList<String> words){ // get random index from words
+        Random randomNumber = new Random(); 
+        return randomNumber.nextInt(words.size());
+    }
+    
+    // WAI
+    public static String formatGuess(ArrayList<String> colorToChange, String guess){
+        String formattedGuess = "";
+        for (int i = 0; i < colorToChange.size(); i++){
+            switch (colorToChange.get(i)){
+                case "Green":
+                    formattedGuess += Wordle.GREEN + guess.charAt(i) + Wordle.RESET;
+                    break;
+                case "Yellow":
+                    formattedGuess += Wordle.YELLOW + guess.charAt(i) + Wordle.RESET;
+                    break;
+                case "Red":
+                    formattedGuess += Wordle.RED + guess.charAt(i) + Wordle.RESET;
+                    break;
+                default:    
+                    System.out.println("*Error* program failed to find matching color");
+
+            }
+        }
+        return formattedGuess;
+    }
+
+    // WAI
+    public static Boolean checkLetterOccurences(String correctWord, String guess){
+        
+        for (int i = 0; i < correctWord.length(); i++){
+            int occurrences = 0;
+            for (int j = 0; j < guess.length(); j++){
+                if (correctWord.charAt(i) == guess.charAt(j)){
+                    occurrences += 1;
+                    if (occurrences > 1){
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // WAI
+    public static ArrayList<String> checkGuess(String correctWord, String guess){ // what if instead of an index to change, i give a character to change
+        ArrayList<String> colorToChange = new ArrayList<String>();
+        for (int i = 0; i < guess.length(); i++){
+            if (correctWord.charAt(i) == guess.charAt(i)){
+                colorToChange.add("Green");
+            } else if (correctWord.indexOf(guess.charAt(i)) == -1 ){ 
+                colorToChange.add("Red");
+            } else if (correctWord.indexOf(guess.charAt(i)) != -1){ 
+                if (checkLetterOccurences(correctWord, guess)){
+                    colorToChange.add("Red");
+                } else {
+                    colorToChange.add("Yellow");
+                }
+
+            }
+                
+        }        
+
+        return colorToChange;
+    }
+
+    // WAI
+    public static int countColor(String[] formattedLetters, String color){ // counts the occcurences of a given color in order to format the prefered keyboard
+        int count = 0;
+        for (int i = 0; i < formattedLetters.length; i++){
+            if (formattedLetters[i].contains(color) == true){ // is given letter the provided color
+                count += 1;
+            }
+        }
+        return count;
+    }
+    
+    // WAI
+    public static Boolean checkWin(String correctWord, String guess){
+        if (guess.equals(correctWord)){
+            return true; // Win!
+        } else {
+            return false; // Game continues...
+        }
+    }
+
+    // WAI
+    public static Boolean checkUserInput(String guess, int desiredGuessLength){
+        if (guess.length() != desiredGuessLength){ // check if our guess is the correct length
+            return false; // its not a valid guess
+        }
+        
+        char[] guessCharacters = guess.toCharArray();
+
+        for (char ch : guessCharacters){ // check if it consist of only valid characters
+            if (Character.isLetter(ch) == false){
+                return false; // its not a valid guess
+            }
+        }
+
+        return true; // its a valid guess
+    }
+
+    //TODO add a check input is real word function (easy)
+
+    public static void main(String[] args){
+        
+        Scanner scnr = new Scanner(System.in);
+        ArrayList<String> words = readFile(); // read file
+        int randomWordIndex = getWord(words); // get index of random word
+        String randomWord = words.get(randomWordIndex).toUpperCase(); // get random word
+        ArrayList<String> guessedWords = new ArrayList<String>(); // initilize a list to hold past guesses
+        ArrayList<String> colorToChange; 
+        String colorToFormatKeyboard = Wordle.GREEN; 
+        String[] keyboard = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}; // initilize the keyboard
+        String guess = ""; // initilize guess
+        int desiredGuessLength = 5; // how long the guess "should" be
+
+        for (int i = 0; i < 6; i++){
+            
+            if (i < 1){ // first trial
+                System.out.print("Enter a guess: "); // prompt
+                
+                guess = scnr.nextLine().replaceAll("\\p{Punct}"," ").trim().toUpperCase();
+                
+                while (checkUserInput(guess, desiredGuessLength) != true){ // check input
+                    System.out.print("*Error* enter valid input that consist of " + desiredGuessLength + " alphabetic characters: ");
+                    guess = scnr.nextLine().replaceAll("\\p{Punct}"," ").trim().toUpperCase();
+                }
+
+                colorToChange = checkGuess(randomWord, guess);
+                guessedWords.add(formatGuess(colorToChange, guess));
+                keyboard = formatLetters(colorToChange, guess, keyboard);
+                System.out.println(guessedWords.get(0)); // print guess
+                
+                for (String s : keyboard){ // print the current state of keyboard
+                    System.out.print(s);
+                }
+                
+                System.out.println();
+                
+                if (checkWin(randomWord, guess)){ // check if user won
+                    System.out.println("Congratualtions! You Win!");
+                    break;
+                }
+            
+            } else { // remaining trials
+                System.out.print("Enter a guess: "); // prompt
+                guess = scnr.nextLine().replaceAll("\\p{Punct}"," ").trim().toUpperCase();
+
+                while (checkUserInput(guess, desiredGuessLength) != true){ // check input
+                    System.out.print("*Error* enter valid input that consist of " + desiredGuessLength + " alphabetic characters: ");
+                    guess = scnr.nextLine().replaceAll("\\p{Punct}"," ").trim().toUpperCase();
+                }
+
+                colorToChange = checkGuess(randomWord, guess);
+                guessedWords.add(formatGuess(colorToChange, guess));
+                //                  new                                                                      old
+                if (countColor(formatLetters(colorToChange, guess, keyboard), colorToFormatKeyboard) > countColor(keyboard, colorToFormatKeyboard)){ // checks if the newest guess reflects a better keyboard
+                    keyboard = formatLetters(colorToChange, guess, keyboard); // newest keyboard is better than previous
+                }
+            
+                for (int j = 0; j < guessedWords.size(); j++){ // output previous guesses
+                    System.out.println(guessedWords.get(j));
+                }
+                
+                for (String s : keyboard){ // print the current state of keyboard
+                    System.out.print(s);
+                }
+
+                System.out.println();
+                
+                if (checkWin(randomWord, guess)){ // check if user won
+                    System.out.println("Congratualtions! You Win!");
+                    break;
+                }
+            }
+        }
+
+        if (checkWin(randomWord, guess) == false){ // check if user won
+            System.out.println("The correct word was: " + randomWord);
+            System.out.println("You lost, better luck next time!");
+            
+        }  
+
+        writeToFile(words, randomWordIndex);
+        scnr.close();
+    }
+
+}
+
+
